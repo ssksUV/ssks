@@ -1,1 +1,1 @@
-# ssks
+# Sklepowy system kontroli standardów 
