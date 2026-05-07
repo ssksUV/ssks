@@ -78,6 +78,16 @@ prisma/
 | POST | `/api/tenants` | Tworzenie tenanta | ADMIN |
 | PUT | `/api/tenants/:id` | Edycja tenanta | ADMIN |
 
+### Stores
+
+| Metoda | Ścieżka | Opis | Autoryzacja |
+|--------|---------|------|-------------|
+| GET | `/api/stores` | Lista sklepów tenanta | ADMIN, MANAGER |
+| GET | `/api/stores/:id` | Szczegóły sklepu | ADMIN, MANAGER |
+| POST | `/api/stores` | Tworzenie sklepu | ADMIN, MANAGER |
+| PUT | `/api/stores/:id` | Edycja sklepu | ADMIN, MANAGER |
+| DELETE | `/api/stores/:id` | Dezaktywacja sklepu | ADMIN, MANAGER |
+
 ### Users
 
 | Metoda | Ścieżka | Opis | Autoryzacja |
