@@ -78,3 +78,11 @@ prisma/
 | POST | `/api/tenants` | Tworzenie tenanta | ADMIN |
 | PUT | `/api/tenants/:id` | Edycja tenanta | ADMIN |
 
+### Users
+
+| Metoda | Ścieżka | Opis | Autoryzacja |
+|--------|---------|------|-------------|
+| GET | `/api/users?tenantId=` | Lista użytkowników tenanta | ADMIN |
+| PUT | `/api/users/:id?tenantId=` | Edycja użytkownika | ADMIN |
+| DELETE | `/api/users/:id?tenantId=` | Dezaktywacja użytkownika | ADMIN |
+
