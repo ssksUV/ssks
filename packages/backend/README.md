@@ -67,7 +67,7 @@ prisma/
 | Metoda | Ścieżka | Opis | Autoryzacja |
 |--------|---------|------|-------------|
 | POST | `/api/auth/login` | Logowanie, zwraca JWT | – |
-| POST | `/api/auth/register` | Tworzenie nowego użytkownika | ADMIN |
+| POST | `/api/auth/register` | Tworzenie nowego użytkownika | ADMIN, MANAGER (tylko MANAGER/AUDITOR w swoim tenancie) |
 
 ### Tenants
 
@@ -82,11 +82,11 @@ prisma/
 
 | Metoda | Ścieżka | Opis | Autoryzacja |
 |--------|---------|------|-------------|
-| GET | `/api/stores` | Lista sklepów tenanta | ADMIN, MANAGER |
-| GET | `/api/stores/:id` | Szczegóły sklepu | ADMIN, MANAGER |
-| POST | `/api/stores` | Tworzenie sklepu | ADMIN, MANAGER |
-| PUT | `/api/stores/:id` | Edycja sklepu | ADMIN, MANAGER |
-| DELETE | `/api/stores/:id` | Dezaktywacja sklepu | ADMIN, MANAGER |
+| GET | `/api/stores` | Lista sklepów tenanta | MANAGER |
+| GET | `/api/stores/:id` | Szczegóły sklepu | MANAGER |
+| POST | `/api/stores` | Tworzenie sklepu | MANAGER |
+| PUT | `/api/stores/:id` | Edycja sklepu | MANAGER |
+| DELETE | `/api/stores/:id` | Dezaktywacja sklepu | MANAGER |
 
 ### Users
 

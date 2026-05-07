@@ -1,5 +1,6 @@
-import { Request, Response } from 'express';
-  import * as authService from '../services/auth.service';                                                                                                                                                                                                                                
+  import { Request, Response } from 'express';                                                                                                                                                                                
+  import { AuthRequest } from '../middleware/auth.middleware';                                                                                                                                                                  import * as authService from '../services/auth.service';
+
   export async function loginHandler(req: Request, res: Response) {
     try {
       const { email, password } = req.body;
@@ -15,13 +16,29 @@ import { Request, Response } from 'express';
     }
   }
 
-  export async function registerHandler(req: Request, res: Response) {
+  export async function registerHandler(req: AuthRequest, res: Response) {
     try {
       const { email, password, firstName, lastName, role, tenantId } = req.body;
       if (!email || !password || !firstName || !lastName || !role) {
         res.status(400).json({ error: 'Wszystkie pola są wymagane' });
         return;
       }
+
+      const caller = req.user!;
+
+      if (caller.role === 'MANAGER') {
+        if (!['MANAGER', 'AUDITOR'].includes(role)) {
+          res.status(403).json({ error: 'Kierownik może tworzyć tylko konta MANAGER i AUDITOR' });
+          return;
+        }
+        const result = await authService.register({
+          email, password, firstName, lastName, role,
+          tenantId: caller.tenantId!,
+        });
+        res.status(201).json(result);
+        return;
+      }
+
       const result = await authService.register({ email, password, firstName, lastName, role, tenantId });
       res.status(201).json(result);
     } catch (err: unknown) {

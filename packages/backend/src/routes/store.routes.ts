@@ -1,5 +1,6 @@
   import { Router } from 'express';
-  import { authenticate, requireRole } from '../middleware/auth.middleware';                                                                                                                                                    import { requireTenant } from '../middleware/tenant.middleware';
+  import { authenticate, requireRole } from '../middleware/auth.middleware';
+  import { requireTenant } from '../middleware/tenant.middleware';
   import {
     getStoresHandler,
     getStoreHandler,
@@ -10,7 +11,7 @@
 
   const router = Router();
 
-  router.use(authenticate, requireRole('ADMIN', 'MANAGER'), requireTenant);
+  router.use(authenticate, requireRole('MANAGER'), requireTenant);
 
   router.get('/', getStoresHandler);
   router.get('/:id', getStoreHandler);
