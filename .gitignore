@@ -4,3 +4,4 @@ dist/
 *.log
 packages/backend/uploads/*
 !packages/backend/uploads/.gitkeep
+Dokumentacja-projektu.md
