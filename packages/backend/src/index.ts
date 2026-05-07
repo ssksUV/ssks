@@ -1,6 +1,7 @@
   import 'dotenv/config';
-  import express from 'express';                                                                                                                                                                                                import cors from 'cors';                                  
+  import express from 'express';                                                                                                                                                                                                import cors from 'cors';
   import authRoutes from './routes/auth.routes';
+  import tenantRoutes from './routes/tenant.routes';
 
   const app = express();
   const PORT = process.env.PORT ?? 3000;
@@ -13,6 +14,7 @@
   });
 
   app.use('/api/auth', authRoutes);
+  app.use('/api/tenants', tenantRoutes);
 
   app.listen(PORT, () => {
     console.log(`Backend running on http://localhost:${PORT}`);

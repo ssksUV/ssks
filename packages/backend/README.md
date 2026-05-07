@@ -68,3 +68,13 @@ prisma/
 |--------|---------|------|-------------|
 | POST | `/api/auth/login` | Logowanie, zwraca JWT | – |
 | POST | `/api/auth/register` | Tworzenie nowego użytkownika | ADMIN |
+
+### Tenants
+
+| Metoda | Ścieżka | Opis | Autoryzacja |
+|--------|---------|------|-------------|
+| GET | `/api/tenants` | Lista wszystkich tenantów | ADMIN |
+| GET | `/api/tenants/:id` | Szczegóły tenanta | ADMIN |
+| POST | `/api/tenants` | Tworzenie tenanta | ADMIN |
+| PUT | `/api/tenants/:id` | Edycja tenanta | ADMIN |
+
