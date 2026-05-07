@@ -92,7 +92,6 @@ prisma/
 
 | Metoda | Ścieżka | Opis | Autoryzacja |
 |--------|---------|------|-------------|
-| GET | `/api/users?tenantId=` | Lista użytkowników tenanta | ADMIN |
-| PUT | `/api/users/:id?tenantId=` | Edycja użytkownika | ADMIN |
-| DELETE | `/api/users/:id?tenantId=` | Dezaktywacja użytkownika | ADMIN |
-
+| GET | `/api/users?tenantId=` | Lista użytkowników tenanta | ADMIN, MANAGER (tylko w swoim tenancie) |
+| PUT | `/api/users/:id?tenantId=` | Edycja użytkownika | ADMIN, MANAGER (tylko w swoim tenancie) |
+| DELETE | `/api/users/:id?tenantId=` | Dezaktywacja użytkownika | ADMIN, MANAGER (tylko w swoim tenancie) |

@@ -1,4 +1,4 @@
-import { Router } from 'express';
+  import { Router } from 'express';
   import { authenticate, requireRole } from '../middleware/auth.middleware';
   import {
     getUsersHandler,
@@ -8,7 +8,7 @@ import { Router } from 'express';
 
   const router = Router();
 
-  router.use(authenticate, requireRole('ADMIN'));
+  router.use(authenticate, requireRole('ADMIN', 'MANAGER'));
 
   router.get('/', getUsersHandler);
   router.put('/:id', updateUserHandler);
