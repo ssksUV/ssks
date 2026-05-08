@@ -1,5 +1,7 @@
 import PDFDocument from 'pdfkit';
   import { Response } from 'express';
+  import path from 'path';
+  import fs from 'fs'
 
   const FONT = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
   const FONT_BOLD = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf';
@@ -33,6 +35,8 @@ import PDFDocument from 'pdfkit';
 
   export function generateAuditPdf(audit: AuditData, res: Response) {
     const doc = new PDFDocument({ margin: 50 });
+    const uploadsDir = path.resolve(process.env.UPLOADS_DIR ?? './uploads');
+
     doc.registerFont('Regular', FONT);
     doc.registerFont('Bold', FONT_BOLD);
     doc.font('Regular');
@@ -75,6 +79,16 @@ import PDFDocument from 'pdfkit';
         const statusSymbol = status === 'OK' ? '✓' : status === 'FAIL' ? '✗' : '–';
 
         doc.fontSize(11).text(`${statusSymbol} ${item.description}${score}${note}`, { indent: 15 });
+        const photoUrl = result?.photoUrl;
+        if (photoUrl) {
+            const photoPath = path.join(uploadsDir, path.basename(photoUrl));
+            if (fs.existsSync(photoPath)) {
+            try {
+                doc.image(photoPath, 65, undefined, { width: 180 });
+                doc.moveDown(0.3);
+            } catch {}
+            }
+        }
       }
       doc.moveDown();
     }
