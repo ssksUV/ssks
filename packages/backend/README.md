@@ -92,6 +92,33 @@ prisma/
 
 | Metoda | Ścieżka | Opis | Autoryzacja |
 |--------|---------|------|-------------|
-| GET | `/api/users?tenantId=` | Lista użytkowników tenanta | ADMIN, MANAGER (tylko w swoim tenancie) |
-| PUT | `/api/users/:id?tenantId=` | Edycja użytkownika | ADMIN, MANAGER (tylko w swoim tenancie) |
-| DELETE | `/api/users/:id?tenantId=` | Dezaktywacja użytkownika | ADMIN, MANAGER (tylko w swoim tenancie) |
+| GET | `/api/users?tenantId=` | Lista użytkowników tenanta | ADMIN, MANAGER |
+| PUT | `/api/users/:id?tenantId=` | Edycja użytkownika | ADMIN, MANAGER |
+| DELETE | `/api/users/:id?tenantId=` | Dezaktywacja użytkownika | ADMIN, MANAGER |
+
+### Templates
+
+| Metoda | Ścieżka | Opis | Autoryzacja |
+|--------|---------|------|-------------|
+| GET | `/api/templates` | Lista szablonów checklist | MANAGER |
+| GET | `/api/templates/:id` | Szczegóły szablonu z kategoriami i punktami | MANAGER |
+| POST | `/api/templates` | Tworzenie szablonu | MANAGER |
+| PUT | `/api/templates/:id` | Edycja szablonu | MANAGER |
+| DELETE | `/api/templates/:id` | Dezaktywacja szablonu | MANAGER |
+| POST | `/api/templates/:id/categories` | Dodanie kategorii do szablonu | MANAGER |
+| PUT | `/api/templates/categories/:id` | Edycja kategorii | MANAGER |
+| DELETE | `/api/templates/categories/:id` | Usunięcie kategorii (kaskadowo usuwa punkty) | MANAGER |
+| POST | `/api/templates/categories/:id/items` | Dodanie punktu kontrolnego | MANAGER |
+| PUT | `/api/templates/items/:id` | Edycja punktu kontrolnego | MANAGER |
+| DELETE | `/api/templates/items/:id` | Usunięcie punktu kontrolnego | MANAGER |
+
+### Audits
+
+| Metoda | Ścieżka | Opis | Autoryzacja |
+|--------|---------|------|-------------|
+| GET | `/api/audits` | Lista audytów (MANAGER: wszystkie w tenancie, AUDITOR: własne) | MANAGER, AUDITOR |
+| GET | `/api/audits/:id` | Szczegóły audytu z wynikami | MANAGER, AUDITOR |
+| POST | `/api/audits` | Tworzenie audytu | MANAGER |
+| PATCH | `/api/audits/:id/start` | Rozpoczęcie audytu (status → IN_PROGRESS) | AUDITOR |
+| PUT | `/api/audits/:id/results` | Zapis wyników punktów kontrolnych | AUDITOR |
+| PATCH | `/api/audits/:id/complete` | Zakończenie audytu (status → COMPLETED) | AUDITOR |

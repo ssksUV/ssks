@@ -7,6 +7,7 @@
   import userRoutes from './routes/user.routes';
   import storeRoutes from './routes/store.routes';
   import templateRoutes from './routes/template.routes';
+  import auditRoutes from './routes/audit.routes';
 
   const app = express();
   const PORT = process.env.PORT ?? 3000;
@@ -21,5 +22,6 @@
   app.use('/api/users', userRoutes);
   app.use('/api/stores', storeRoutes);
   app.use('/api/templates', templateRoutes);
+  app.use('/api/audits', auditRoutes);
 
   app.listen(PORT, () => console.log(`Backend running on http://localhost:${PORT}`));
