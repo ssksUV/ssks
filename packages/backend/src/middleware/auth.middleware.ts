@@ -1,5 +1,9 @@
-import { Request, Response, NextFunction } from 'express';
-  import jwt from 'jsonwebtoken';                                                                                                                                                                                                                                                         
+ import { Request, Response, NextFunction } from 'express';
+  import jwt from 'jsonwebtoken';
+  import { PrismaClient } from '@prisma/client';
+
+  const prisma = new PrismaClient();
+
   export interface AuthRequest extends Request {
     user?: {
       userId: string;
@@ -8,7 +12,7 @@ import { Request, Response, NextFunction } from 'express';
     };
   }
 
-  export function authenticate(req: AuthRequest, res: Response, next: NextFunction) {
+  export async function authenticate(req: AuthRequest, res: Response, next: NextFunction) {
     const header = req.headers.authorization;
     if (!header?.startsWith('Bearer ')) {
       res.status(401).json({ error: 'Brak tokenu' });
@@ -18,6 +22,17 @@ import { Request, Response, NextFunction } from 'express';
     const token = header.split(' ')[1];
     try {
       const payload = jwt.verify(token, process.env.JWT_SECRET!) as AuthRequest['user'];
+
+      const user = await prisma.user.findUnique({
+        where: { id: payload!.userId },
+        select: { isActive: true },
+      });
+
+      if (!user || !user.isActive) {
+        res.status(401).json({ error: 'Konto zostało dezaktywowane' });
+        return;
+      }
+
       req.user = payload;
       next();
     } catch {
