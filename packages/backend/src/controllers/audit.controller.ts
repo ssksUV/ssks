@@ -4,7 +4,10 @@
 
   export async function getAudits(req: AuthRequest, res: Response) {
     const { userId, tenantId, role } = req.user!;
-    const audits = await auditService.getAudits(tenantId!, userId, role);
+    const { status, storeId, auditorId, dateFrom, dateTo } = req.query as Record<string, string>;
+    const audits = await auditService.getAudits(tenantId!, userId, role, {
+      status, storeId, auditorId, dateFrom, dateTo,
+    });
     res.json(audits);
   }
 

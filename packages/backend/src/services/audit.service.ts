@@ -14,19 +14,37 @@
     }
   }
 
-  export async function getAudits(tenantId: string, userId: string, role: string) {
-    const where =
-      role === 'AUDITOR'
-        ? { tenantId, auditorId: userId }
-        : { tenantId };
+   export async function getAudits(                                                                                                                                                                                                                                              tenantId: string,
+    userId: string,
+    role: string,
+    filters: {
+      status?: string;
+      storeId?: string;
+      auditorId?: string;
+      dateFrom?: string;
+      dateTo?: string;
+    } = {}
+  ) {
+    const where: any = role === 'AUDITOR'
+      ? { tenantId, auditorId: userId }
+      : { tenantId };
+
+    if (filters.status)   where.status   = filters.status;
+    if (filters.storeId)  where.storeId  = filters.storeId;
+    if (filters.auditorId) where.auditorId = filters.auditorId;
+    if (filters.dateFrom || filters.dateTo) {
+      where.deadline = {};
+      if (filters.dateFrom) where.deadline.gte = new Date(filters.dateFrom);
+      if (filters.dateTo)   where.deadline.lte = new Date(filters.dateTo);
+    }
 
     return prisma.audit.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       include: {
-        store: { select: { id: true, name: true, city: true } },
+        store:    { select: { id: true, name: true, city: true } },
         template: { select: { id: true, name: true } },
-        auditor: { select: { id: true, firstName: true, lastName: true } },
+        auditor:  { select: { id: true, firstName: true, lastName: true } },
       },
     });
   }
