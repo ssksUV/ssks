@@ -1,0 +1,173 @@
+  generator client {
+    provider = "prisma-client-js"
+  }
+
+  datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+  }
+
+  enum UserRole {
+    ADMIN
+    MANAGER
+    AUDITOR
+  }
+
+  enum AuditStatus {
+    NEW
+    IN_PROGRESS
+    COMPLETED
+  }
+
+  enum ResultStatus {
+    OK
+    FAIL
+    NA
+  }
+
+  model Tenant {
+    id        String   @id @default(cuid())
+    name      String
+    logoUrl   String?  @map("logo_url")
+    isActive  Boolean  @default(true) @map("is_active")
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    users     User[]
+    stores    Store[]
+    templates ChecklistTemplate[]
+    audits    Audit[]
+
+    @@map("tenants")
+  }
+
+  model User {
+    id        String   @id @default(cuid())
+    tenantId  String?  @map("tenant_id")
+    email     String   @unique
+    password  String
+    firstName String   @map("first_name")
+    lastName  String   @map("last_name")
+    role      UserRole
+    isActive  Boolean  @default(true) @map("is_active")
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    tenant         Tenant?  @relation(fields: [tenantId], references: [id])
+    assignedAudits Audit[]  @relation("AuditorAudits")
+    createdAudits  Audit[]  @relation("AssignedByAudits")
+
+    @@index([tenantId])
+    @@map("users")
+  }
+
+  model Store {
+    id        String   @id @default(cuid())
+    tenantId  String   @map("tenant_id")
+    name      String
+    address   String
+    city      String
+    region    String?
+    isActive  Boolean  @default(true) @map("is_active")
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    tenant Tenant  @relation(fields: [tenantId], references: [id])
+    audits Audit[]
+
+    @@index([tenantId])
+    @@map("stores")
+  }
+
+  model ChecklistTemplate {
+    id          String  @id @default(cuid())
+    tenantId    String  @map("tenant_id")
+    name        String
+    description String?
+    isActive    Boolean @default(true) @map("is_active")
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    tenant     Tenant     @relation(fields: [tenantId], references: [id])
+    categories Category[]
+    audits     Audit[]
+
+    @@index([tenantId])
+    @@map("checklist_templates")
+  }
+
+  model Category {
+    id         String @id @default(cuid())
+    templateId String @map("template_id")
+    name       String
+    order      Int    @default(0)
+
+    template ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+    items    ChecklistItem[]
+
+    @@index([templateId])
+    @@map("categories")
+  }
+
+  model ChecklistItem {
+    id          String @id @default(cuid())
+    categoryId  String @map("category_id")
+    description String
+    order       Int    @default(0)
+
+    category     Category      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+    auditResults AuditResult[]
+
+    @@index([categoryId])
+    @@map("checklist_items")
+  }
+
+  model Audit {
+    id              String      @id @default(cuid())
+    tenantId        String      @map("tenant_id")
+    templateId      String      @map("template_id")
+    storeId         String      @map("store_id")
+    auditorId       String      @map("auditor_id")
+    assignedById    String      @map("assigned_by_id")
+    status          AuditStatus @default(NEW)
+    deadline        DateTime
+    gpsLat          Float?      @map("gps_lat")
+    gpsLng          Float?      @map("gps_lng")
+    resolvedAddress String?     @map("resolved_address")
+    startedAt       DateTime?   @map("started_at")
+    completedAt     DateTime?   @map("completed_at")
+    createdAt       DateTime    @default(now()) @map("created_at")
+    updatedAt       DateTime    @updatedAt @map("updated_at")
+
+    tenant     Tenant            @relation(fields: [tenantId], references: [id])
+    template   ChecklistTemplate @relation(fields: [templateId], references: [id])
+    store      Store             @relation(fields: [storeId], references: [id])
+    auditor    User              @relation("AuditorAudits", fields: [auditorId], references: [id])
+    assignedBy User              @relation("AssignedByAudits", fields: [assignedById], references: [id])
+    results    AuditResult[]
+
+    @@index([tenantId])
+    @@index([auditorId])
+    @@index([status])
+    @@map("audits")
+  }
+
+  model AuditResult {
+    id              String       @id @default(cuid())
+    auditId         String       @map("audit_id")
+    checklistItemId String       @map("checklist_item_id")
+    status          ResultStatus @default(NA)
+    score           Int?
+    note            String?
+    photoUrl        String?      @map("photo_url")
+    createdAt       DateTime     @default(now()) @map("created_at")
+    updatedAt       DateTime     @updatedAt @map("updated_at")
+
+    audit         Audit         @relation(fields: [auditId], references: [id], onDelete: Cascade)
+    checklistItem ChecklistItem @relation(fields: [checklistItemId], references: [id])
+
+    @@unique([auditId, checklistItemId])
+    @@index([auditId])
+    @@map("audit_results")
+  }
