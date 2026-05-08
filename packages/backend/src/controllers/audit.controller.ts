@@ -1,5 +1,6 @@
   import { Response } from 'express';                                                                                                                                                                                                                                         import { AuthRequest } from '../middleware/auth.middleware';
   import * as auditService from '../services/audit.service';
+  import { generateAuditPdf } from '../services/pdf.service';     
 
   export async function getAudits(req: AuthRequest, res: Response) {
     const { userId, tenantId, role } = req.user!;
@@ -63,4 +64,14 @@
     const audit = await auditService.completeAudit(tenantId!, String(req.params.id), userId);
     if (!audit) return res.status(404).json({ error: 'Audyt nie istnieje lub nie jest w toku' });
     res.json(audit);
+  }
+  
+  export async function getAuditPdf(req: AuthRequest, res: Response) {
+    const { userId, tenantId, role } = req.user!;
+    const audit = await auditService.getAuditById(tenantId!, String(req.params.id), userId, role);
+    if (!audit) return res.status(404).json({ error: 'Audyt nie istnieje' });
+    if (audit.status !== 'COMPLETED') {
+      return res.status(400).json({ error: 'PDF dostępny tylko dla zakończonych audytów' });
+    }
+    generateAuditPdf(audit as any, res);
   }

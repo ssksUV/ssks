@@ -2,6 +2,18 @@
 
   const prisma = new PrismaClient();
 
+  async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
+    try {
+      const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`;
+      const res = await fetch(url, { headers: { 'User-Agent': 'ssks-app/1.0' } });
+      if (!res.ok) return null;
+      const data = await res.json() as { display_name?: string };
+      return data.display_name ?? null;
+    } catch {
+      return null;
+    }
+  }
+
   export async function getAudits(tenantId: string, userId: string, role: string) {
     const where =
       role === 'AUDITOR'
@@ -77,7 +89,8 @@
     });
   }
 
-  export async function startAudit(                                                                                                                                                                                                                                             tenantId: string,
+  export async function startAudit(
+    tenantId: string,
     auditId: string,
     auditorId: string,
     gps?: { gpsLat?: number; gpsLng?: number; resolvedAddress?: string }
@@ -87,6 +100,11 @@
     });
     if (!audit) return null;
 
+    let resolvedAddress = gps?.resolvedAddress ?? null;
+    if (!resolvedAddress && gps?.gpsLat != null && gps?.gpsLng != null) {
+      resolvedAddress = await reverseGeocode(gps.gpsLat, gps.gpsLng);
+    }
+
     return prisma.audit.update({
       where: { id: auditId },
       data: {
@@ -94,7 +112,7 @@
         startedAt: new Date(),
         gpsLat: gps?.gpsLat,
         gpsLng: gps?.gpsLng,
-        resolvedAddress: gps?.resolvedAddress,
+        resolvedAddress,
       },
     });
   }

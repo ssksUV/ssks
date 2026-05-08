@@ -12,5 +12,6 @@
   router.patch('/:id/start', requireRole('AUDITOR'), auditController.startAudit);
   router.put('/:id/results', requireRole('AUDITOR'), auditController.saveResults);
   router.patch('/:id/complete', requireRole('AUDITOR'), auditController.completeAudit);
+  router.get('/:id/pdf', requireRole('MANAGER', 'AUDITOR'), auditController.getAuditPdf);
 
   export default router;

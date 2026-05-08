@@ -122,3 +122,11 @@ prisma/
 | PATCH | `/api/audits/:id/start` | Rozpoczęcie audytu (status → IN_PROGRESS) | AUDITOR |
 | PUT | `/api/audits/:id/results` | Zapis wyników punktów kontrolnych | AUDITOR |
 | PATCH | `/api/audits/:id/complete` | Zakończenie audytu (status → COMPLETED) | AUDITOR |
+| GET | `/api/audits/:id/pdf` | Pobranie raportu PDF (tylko COMPLETED) | MANAGER, AUDITOR |
+
+### Uploads
+
+| Metoda | Ścieżka | Opis | Autoryzacja |
+|--------|---------|------|-------------|
+| POST | `/api/uploads` | Upload zdjęcia (multipart/form-data, pole: `photo`) | MANAGER, AUDITOR |
+| GET | `/uploads/:filename` | Pobranie zdjęcia (statyczny URL) | – |
