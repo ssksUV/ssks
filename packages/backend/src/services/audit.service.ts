@@ -77,7 +77,11 @@
     });
   }
 
-  export async function startAudit(tenantId: string, auditId: string, auditorId: string) {
+  export async function startAudit(                                                                                                                                                                                                                                             tenantId: string,
+    auditId: string,
+    auditorId: string,
+    gps?: { gpsLat?: number; gpsLng?: number; resolvedAddress?: string }
+  ) {
     const audit = await prisma.audit.findFirst({
       where: { id: auditId, tenantId, auditorId, status: 'NEW' },
     });
@@ -85,15 +89,28 @@
 
     return prisma.audit.update({
       where: { id: auditId },
-      data: { status: 'IN_PROGRESS', startedAt: new Date() },
+      data: {
+        status: 'IN_PROGRESS',
+        startedAt: new Date(),
+        gpsLat: gps?.gpsLat,
+        gpsLng: gps?.gpsLng,
+        resolvedAddress: gps?.resolvedAddress,
+      },
     });
   }
+
 
   export async function saveResults(
     tenantId: string,
     auditId: string,
     auditorId: string,
-    results: { checklistItemId: string; status: 'OK' | 'FAIL' | 'NA'; score?: number; note?: string }[]
+    results: {
+      checklistItemId: string;
+      status: 'OK' | 'FAIL' | 'NA';
+      score?: number;
+      note?: string;
+      photoUrl?: string;
+    }[]
   ) {
     const audit = await prisma.audit.findFirst({
       where: { id: auditId, tenantId, auditorId, status: 'IN_PROGRESS' },
@@ -103,8 +120,15 @@
     const upserts = results.map((r) =>
       prisma.auditResult.upsert({
         where: { auditId_checklistItemId: { auditId, checklistItemId: r.checklistItemId } },
-        update: { status: r.status, score: r.score, note: r.note },
-        create: { auditId, checklistItemId: r.checklistItemId, status: r.status, score: r.score, note: r.note },
+        update: { status: r.status, score: r.score, note: r.note, photoUrl: r.photoUrl },
+        create: {
+          auditId,
+          checklistItemId: r.checklistItemId,
+          status: r.status,
+          score: r.score,
+          note: r.note,
+          photoUrl: r.photoUrl,
+        },
       })
     );
 

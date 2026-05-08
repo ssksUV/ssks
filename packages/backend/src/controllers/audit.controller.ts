@@ -35,7 +35,12 @@
 
   export async function startAudit(req: AuthRequest, res: Response) {
     const { userId, tenantId } = req.user!;
-    const audit = await auditService.startAudit(tenantId!, String(req.params.id), userId);
+    const { gpsLat, gpsLng, resolvedAddress } = req.body;
+    const audit = await auditService.startAudit(tenantId!, String(req.params.id), userId, {
+      gpsLat,
+      gpsLng,
+      resolvedAddress,
+    });
     if (!audit) return res.status(404).json({ error: 'Audyt nie istnieje lub nie można go rozpocząć' });
     res.json(audit);
   }
