@@ -20,7 +20,7 @@ export default function LoginPage() {
       }
 
       localStorage.setItem('token', token);
-      message.success('Pomyślnie zalogowano');
+      message.success('Pomylnie zalogowano');
       navigate('/');
     } catch (error) {
       message.error('Błąd logowania. Sprawdź dane i spróbuj ponownie.');

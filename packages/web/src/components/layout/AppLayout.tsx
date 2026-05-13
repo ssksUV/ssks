@@ -16,7 +16,7 @@ export function AppLayout() {
           selectedKeys={[location.pathname]}
           items={[
             { key: '/', label: <Link to="/">Dashboard</Link> },
-            { key: '/', label: <Link to="/">Dashboard</Link> }
+            { key: '/tenants', label: <Link to="/tenants">Tenants</Link> }
           ]}
         />
       </Sider>
