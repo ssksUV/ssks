@@ -15,8 +15,10 @@
       res.status(401).json({ error: message });
     }
   }
-
-  export async function registerHandler(req: AuthRequest, res: Response) {
+export async function validateHandler(req: AuthRequest, res: Response) {
+  res.json({ valid: true });
+}
+export async function registerHandler(req: AuthRequest, res: Response) {
     try {
       const { email, password, firstName, lastName, role, tenantId } = req.body;
       if (!email || !password || !firstName || !lastName || !role) {

@@ -5,6 +5,7 @@
   const router = Router();
 
   router.post('/login', loginHandler);
+  router.get('/validate', authenticate, (req, res) => res.json({ valid: true }));
   router.post('/register', authenticate, requireRole('ADMIN', 'MANAGER'), registerHandler);
 
   export default router;

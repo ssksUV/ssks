@@ -7,4 +7,5 @@ export type LoginPayload = {
 
 export const authService = {
   login: (payload: LoginPayload) => http.post('/auth/login', payload),
+  validateToken: () => http.get('/auth/validate'),
 };
