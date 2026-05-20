@@ -5,6 +5,8 @@ import DashboardPage from '../pages/DashboardPage';
 import TenantsPage from '../pages/TenantsPage';
 import LoginPage from '../pages/LoginPage';
 import NotFoundPage from '../pages/NotFoundPage';
+import UsersPage from '../pages/UsersPage';
+import StorePage from '../pages/StorePage';
 
 async function requireAuth() {
   const token = localStorage.getItem('token');
@@ -33,6 +35,8 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <DashboardPage /> },
       { path: 'tenants', element: <TenantsPage /> },
+      { path: 'store', element: <StorePage /> },
+      { path: 'users', element: <UsersPage /> },
     ],
   },
   {

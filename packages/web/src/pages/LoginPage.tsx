@@ -20,10 +20,10 @@ export default function LoginPage() {
       }
 
       localStorage.setItem('token', token);
-      message.success('Pomylnie zalogowano');
+      message.success("Pomyślnie zalogowano");
       navigate('/');
     } catch (error) {
-      message.error('Błąd logowania. Sprawdź dane i spróbuj ponownie.');
+      message.error("Błąd logowania. Sprawdź dane i spróbuj ponownie.");
       console.error(error);
     } finally {
       setLoading(false);
