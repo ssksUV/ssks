@@ -16,7 +16,9 @@
     }
   }
 export async function validateHandler(req: AuthRequest, res: Response) {
-  res.json({ valid: true });
+  // req.user is populated by `authenticate` middleware
+  const user = req.user ?? null;
+  res.json({ valid: true, user });
 }
 export async function registerHandler(req: AuthRequest, res: Response) {
     try {

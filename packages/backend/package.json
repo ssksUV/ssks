@@ -8,7 +8,8 @@
         "start": "node dist/index.js",
         "db:migrate": "prisma migrate dev",
         "db:generate": "prisma generate",
-        "db:studio": "prisma studio"
+        "db:studio": "prisma studio",
+        "db:seed": "npx ts-node src/seed.ts"
     },
     "dependencies": {
         "@prisma/client": "^5.22.0",
