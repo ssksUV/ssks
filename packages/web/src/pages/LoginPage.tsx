@@ -14,7 +14,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const response = await authService.login(values);
-      const token = response.data.accessToken;
+      const token = response.data?.accessToken;
       if (!token) {
         throw new Error('Brak tokenu w odpowiedzi');
       }
