@@ -1,0 +1,229 @@
+
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, View, Text, StyleSheet, Pressable, FlatList } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
+
+import { AuditListItem, AuditStatus, getActiveAudits } from '../../../src/services/audit.service';
+
+function getStatusLabel(status: AuditStatus) {
+  switch (status) {
+    case 'NEW':
+      return 'Nowy';
+    case 'IN_PROGRESS':
+      return 'W trakcie';
+    case 'COMPLETED':
+      return 'Zakończony';
+    default:
+      return status;
+  }
+}
+
+function getStatusStyle(status: AuditStatus) {
+  switch (status) {
+    case 'NEW':
+      return styles.statusNew;
+    case 'IN_PROGRESS':
+      return styles.statusInProgress;
+    case 'COMPLETED':
+      return styles.statusCompleted;
+    default:
+      return styles.statusNew;
+  }
+}
+
+export default function MyAuditsScreen() {
+  const router = useRouter();
+  const [audits, setAudits] = useState<AuditListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadAudits = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getActiveAudits();
+      setAudits(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Nie udało się pobrać audytów');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadAudits();
+    }, [loadAudits]),
+  );
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#1677ff" />
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.kicker}>SSKS</Text>
+      <Text style={styles.title}>Moje audyty</Text>
+      <Text style={styles.subtitle}>Lista audytów przypisanych do użytkownika</Text>
+
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+      <FlatList
+        data={audits}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
+        renderItem={({ item }) => (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View style={styles.cardTitleWrapper}>
+                <Text style={styles.storeName}>{item.storeName}</Text>
+                <Text style={styles.city}>{item.city}</Text>
+              </View>
+              <View style={[styles.statusBadge, getStatusStyle(item.status)]}>
+                <Text style={styles.statusText}>{getStatusLabel(item.status)}</Text>
+              </View>
+            </View>
+
+            <View style={styles.metaRow}>
+              <Text style={styles.metaLabel}>Termin:</Text>
+              <Text style={styles.metaValue}>{item.deadline}</Text>
+            </View>
+
+            <Pressable
+              style={styles.openButton}
+              onPress={() =>
+                router.push({ pathname: '/screens/Audits/AuditDetailsScreen', params: { auditId: item.id } })
+              }
+            >
+              <Text style={styles.openButtonText}>Otwórz audyt</Text>
+            </Pressable>
+          </View>
+        )}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    padding: 20,
+  },
+  kicker: {
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    color: '#1677ff',
+    textTransform: 'uppercase',
+    marginTop: 8,
+    marginBottom: 6,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#1f1f1f',
+  },
+  subtitle: {
+    fontSize: 15,
+    color: '#8c8c8c',
+    marginTop: 6,
+    marginBottom: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listContent: {
+    paddingBottom: 24,
+  },
+  errorText: {
+    color: '#cf1322',
+    marginBottom: 12,
+    fontSize: 14,
+  },
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 14,
+  },
+  cardTitleWrapper: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  storeName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1f1f1f',
+  },
+  city: {
+    fontSize: 14,
+    color: '#8c8c8c',
+    marginTop: 4,
+  },
+  statusBadge: {
+    borderRadius: 999,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+  },
+  statusNew: {
+    backgroundColor: '#e6f4ff',
+  },
+  statusInProgress: {
+    backgroundColor: '#fff7e6',
+  },
+  statusCompleted: {
+    backgroundColor: '#f6ffed',
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1f1f1f',
+  },
+  metaRow: {
+    flexDirection: 'row',
+    marginBottom: 14,
+  },
+  metaLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#595959',
+    marginRight: 6,
+  },
+  metaValue: {
+    fontSize: 14,
+    color: '#595959',
+  },
+  openButton: {
+    backgroundColor: '#1677ff',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  openButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+});
