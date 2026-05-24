@@ -5,7 +5,6 @@
   const router = Router();
 
   router.post('/login', loginHandler);
-  router.get('/validate', authenticate, validateHandler);
   router.post('/register', authenticate, requireRole('ADMIN', 'MANAGER'), registerHandler);
 
   export default router;
