@@ -82,6 +82,24 @@ export default function TenantPage() {
     form.resetFields();
   };
 
+  const handleToggleStatus = async (tenant: Tenant, checked: boolean) => {
+  try {
+    await tenantService.updateTenant(tenant.id, {
+      isActive: checked,
+    });
+
+    message.success(
+      `Tenant został ${checked ? 'aktywowany' : 'dezaktywowany'}`
+    );
+
+    await loadTenants();
+  } catch (error: any) {
+    message.error(
+      error?.response?.data?.error ?? 'Nie udało się zmienić statusu tenanta'
+    );
+  }
+};
+
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
@@ -125,13 +143,22 @@ export default function TenantPage() {
         key: 'logoUrl',
         render: (value: string | null | undefined) => value || '—',
       },
-      {
-        title: 'Status',
-        dataIndex: 'isActive',
-        key: 'isActive',
-        render: (value: boolean) =>
-          value ? <Tag color="green">Aktywny</Tag> : <Tag color="red">Nieaktywny</Tag>,
-      },
+     {
+  title: 'Status',
+  dataIndex: 'isActive',
+  key: 'isActive',
+  render: (value: boolean, record: Tenant) => (
+     <Space>
+      <Switch
+        checked={value}
+        onChange={(checked) => handleToggleStatus(record, checked)}
+      />
+      <Tag color={value ? 'green' : 'red'}>
+        {value ? 'Aktywny' : 'Nieaktywny'}
+      </Tag>
+    </Space>
+  ),
+},
       {
         title: 'Akcje',
         key: 'actions',
@@ -146,14 +173,14 @@ export default function TenantPage() {
   );
 
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+    <Space vertical size={16} style={{ width: '100%' }}>
       <Space style={{ width: '100%', justifyContent: 'space-between' }}>
         <Title level={2} style={{ margin: 0 }}>
-          Tenants
+          Klienci
         </Title>
 
         <Button type="primary" onClick={openCreateModal}>
-          Dodaj tenant
+          Dodaj Klienta
         </Button>
       </Space>
 
@@ -181,7 +208,7 @@ export default function TenantPage() {
             name="name"
             rules={[{ required: true, message: 'Podaj nazwę tenanta' }]}
           >
-            <Input placeholder="Np. Lidl Polska" />
+            <Input placeholder="Np. Sieć Sklepów ABC" />
           </Form.Item>
 
           <Form.Item label="Logo URL" name="logoUrl">

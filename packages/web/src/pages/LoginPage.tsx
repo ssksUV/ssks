@@ -20,6 +20,7 @@ export default function LoginPage() {
       }
 
       localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(response.data?.user));
       message.success("Pomyślnie zalogowano");
       navigate('/');
     } catch (error) {
