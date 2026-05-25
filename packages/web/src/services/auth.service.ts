@@ -8,4 +8,9 @@ export type LoginPayload = {
 export const authService = {
   login: (payload: LoginPayload) => http.post('/auth/login', payload),
   validateToken: () => localStorage.getItem('token'),
+  logout: () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  },
+
 };
