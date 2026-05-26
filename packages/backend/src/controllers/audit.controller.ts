@@ -69,6 +69,14 @@
     res.json(audit);
   }
   
+  export async function reopenAudit(req: AuthRequest, res: Response) {
+    const { tenantId } = req.user!;
+    const result = await auditService.reopenAudit(tenantId!, String(req.params.id));
+    if (!result) return res.status(404).json({ error: 'Audyt nie istnieje' });
+    if ('conflict' in result) return res.status(409).json({ error: 'Audyt nie jest zakończony' });
+    res.json(result);
+  }
+
   export async function getAuditPdf(req: AuthRequest, res: Response) {
     const { userId, tenantId, role } = req.user!;
     const audit = await auditService.getAuditById(tenantId!, String(req.params.id), userId, role);
