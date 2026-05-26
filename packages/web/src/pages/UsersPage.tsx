@@ -276,7 +276,7 @@ export default function UsersPage() {
         dataIndex: 'isActive',
         key: 'isActive',
         render: (value: boolean, record: User) => (
-             <Space>
+            <Space>
               <Switch
                 checked={value}
                 onChange={(checked) => handleToggleStatus(record, checked)}
@@ -284,9 +284,10 @@ export default function UsersPage() {
               <Tag color={value ? 'green' : 'red'}>
                 {value ? 'Aktywny' : 'Nieaktywny'}
               </Tag>
+              
             </Space>
-          ),
-        },
+        ),
+      },
       {
         title: 'Akcje',
         key: 'actions',
