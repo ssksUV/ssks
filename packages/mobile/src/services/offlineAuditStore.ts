@@ -5,6 +5,7 @@ import type { AuditDetails, AuditListItem, AuditTask, SubmitAuditResultsPayload 
 type OfflineAuditBundle = {
   audits: AuditDetails[];
   tasksByAuditId: Record<string, AuditTask[]>;
+  reopenedAuditIds: string[];
   pendingSubmissions: Array<{
     auditId: string;
     payload: SubmitAuditResultsPayload;
@@ -122,7 +123,7 @@ function createSeedData(): OfflineAuditBundle {
     ],
   };
 
-  return { audits, tasksByAuditId, pendingSubmissions: [] };
+  return { audits, tasksByAuditId, reopenedAuditIds: [], pendingSubmissions: [] };
 }
 
 async function ensureFile(): Promise<void> {
@@ -245,6 +246,14 @@ function normalizeCachedAudit(audit: AuditDetails): AuditDetails {
 
 function normalizeBundle(bundle: OfflineAuditBundle): { bundle: OfflineAuditBundle; changed: boolean } {
   let changed = false;
+  const rawReopenedAuditIds = (bundle as unknown as { reopenedAuditIds?: unknown }).reopenedAuditIds;
+  const reopenedAuditIds = Array.isArray(rawReopenedAuditIds)
+    ? rawReopenedAuditIds.filter((id): id is string => typeof id === 'string')
+    : [];
+
+  if (!Array.isArray(rawReopenedAuditIds) || reopenedAuditIds.length !== rawReopenedAuditIds.length) {
+    changed = true;
+  }
 
   const audits = bundle.audits.map((audit) => {
     const normalizedAudit = normalizeCachedAudit(audit);
@@ -273,7 +282,7 @@ function normalizeBundle(bundle: OfflineAuditBundle): { bundle: OfflineAuditBund
   });
 
   if (!changed) {
-    return { bundle, changed: false };
+    return { bundle: { ...bundle, reopenedAuditIds }, changed: false };
   }
 
   return {
@@ -281,6 +290,7 @@ function normalizeBundle(bundle: OfflineAuditBundle): { bundle: OfflineAuditBund
     bundle: {
       ...bundle,
       audits,
+      reopenedAuditIds,
     },
   };
 }
@@ -306,14 +316,22 @@ export async function cacheRemoteAuditsList(list: AuditListItem[]): Promise<void
     const index = bundle.audits.findIndex((audit) => audit.id === item.id);
 
     if (index >= 0) {
+      const existingAudit = bundle.audits[index];
+      const keepLocalReopenedStatus = bundle.reopenedAuditIds.includes(item.id) && item.status === 'COMPLETED';
+
       bundle.audits[index] = {
-        ...bundle.audits[index],
+        ...existingAudit,
         id: item.id,
         storeName: item.storeName,
         city: item.city,
         deadline: item.deadline,
-        status: item.status,
+        status: keepLocalReopenedStatus ? existingAudit.status : item.status,
+        completedAt: keepLocalReopenedStatus ? undefined : existingAudit.completedAt,
       };
+
+      if (item.status !== 'COMPLETED') {
+        bundle.reopenedAuditIds = bundle.reopenedAuditIds.filter((id) => id !== item.id);
+      }
     } else {
       bundle.audits.push({
         id: item.id,
@@ -426,6 +444,8 @@ export async function saveOfflineAuditResults(auditId: string, payload: SubmitAu
     createdAt: new Date().toISOString(),
   });
 
+  bundle.reopenedAuditIds = bundle.reopenedAuditIds.filter((id) => id !== auditId);
+
   await writeBundle(bundle);
 }
 
@@ -464,6 +484,10 @@ export async function reopenOfflineAudit(auditId: string): Promise<void> {
     status: computeDraftStatus(tasks),
     completedAt: undefined,
   };
+
+  if (!bundle.reopenedAuditIds.includes(auditId)) {
+    bundle.reopenedAuditIds.push(auditId);
+  }
 
   await writeBundle(bundle);
 }

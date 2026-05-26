@@ -1,14 +1,20 @@
 import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
+import { useAuth } from '../../../src/context/AuthContext';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+
+  const loggedEmail = typeof user?.email === 'string' ? user.email : 'brak danych';
+
   return (
     <View style={styles.container}>
       <View style={styles.card}>
         <Text style={styles.kicker}>SSKS</Text>
         <Text style={styles.title}>Panel audytora</Text>
         <Text style={styles.subtitle}>Mobilna obsługa audytów sklepów</Text>
+        <Text style={styles.loggedInfo}>Zalogowany: {loggedEmail}</Text>
 
         <View style={styles.buttonContainer}>
           <Pressable
@@ -78,7 +84,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#8c8c8c',
     marginTop: 8,
-    marginBottom: 32,
+    marginBottom: 8,
+  },
+  loggedInfo: {
+    fontSize: 12,
+    textAlign: 'center',
+    color: '#8c8c8c',
+    marginBottom: 24,
   },
   buttonContainer: {
     marginVertical: 8,

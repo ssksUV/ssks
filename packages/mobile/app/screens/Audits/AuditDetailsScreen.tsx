@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, View, Text, StyleSheet, Pressable, FlatList } from 'react-native';
+import { ActivityIndicator, View, Text, StyleSheet, Pressable, FlatList, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -9,8 +9,10 @@ import {
   getAuditTasks,
   reopenAudit,
   saveAuditLocationSnapshot,
+  startAudit,
   submitAuditResults,
 } from '../../../src/services/audit.service';
+import { useAuth } from '../../../src/context/AuthContext';
 import { useCurrentLocation } from '../../../src/hooks/useLocation';
 
 export default function AuditDetailsScreen() {
@@ -22,6 +24,7 @@ export default function AuditDetailsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [gpsLabel, setGpsLabel] = useState('Pobieranie GPS...');
   const [gpsData, setGpsData] = useState<{ latitude: number; longitude: number; city?: string } | null>(null);
+  const { user } = useAuth();
   const { getLocation } = useCurrentLocation();
 
   const toDisplayText = (value: unknown, fallback = 'Brak danych') => {
@@ -154,7 +157,7 @@ export default function AuditDetailsScreen() {
       return () => {
         isMounted = false;
       };
-    }, [audit?.location, audit?.status, getLocation]),
+    }, [audit?.id, audit?.status]),
   );
 
   if (loading) {
@@ -176,6 +179,9 @@ export default function AuditDetailsScreen() {
   }
 
   const isCompleted = audit.status === 'COMPLETED';
+  const userRole = user?.role;
+  const canFinalize = userRole === 'AUDITOR';
+  const canReopen = userRole === 'MANAGER' || userRole === 'ADMIN';
   const storeNameLabel = toDisplayText((audit as unknown as Record<string, unknown>).storeName, 'Nieznany sklep');
   const cityLabel = toDisplayText((audit as unknown as Record<string, unknown>).city, 'Nieznane miasto');
   const deadlineLabel = toDisplayText((audit as unknown as Record<string, unknown>).deadline, 'Brak terminu');
@@ -184,8 +190,34 @@ export default function AuditDetailsScreen() {
 
   const handleFinalizeAudit = async () => {
     try {
+      if (!canFinalize) {
+        setError('Tylko audytor moze zapisac i zamknac audyt.');
+        Alert.alert('Brak uprawnień', 'Tylko audytor moze zapisac i zamknac audyt.');
+        return;
+      }
+
       setFinalizing(true);
-      const tasks = await getAuditTasks(audit.id);
+
+      if (audit.status === 'NEW') {
+        await startAudit(
+          audit.id,
+          gpsData
+            ? {
+                latitude: gpsData.latitude,
+                longitude: gpsData.longitude,
+                city: gpsData.city,
+                capturedAt: new Date().toISOString(),
+              }
+            : null,
+        );
+      }
+
+      let tasks = await getAuditTasks(audit.id);
+
+      if (tasks.some((task) => task.status === null)) {
+        // If local draft is stale/incomplete, use server snapshot for finalization.
+        tasks = await getAuditTasks(audit.id, { preferLocalProgress: false });
+      }
 
       if (tasks.some((task) => task.status === null)) {
         setError('Uzupelnij wszystkie punkty audytu przed finalnym zapisem.');
@@ -204,10 +236,11 @@ export default function AuditDetailsScreen() {
         completedAt: new Date().toISOString(),
       });
 
-      await loadAudit();
-      router.replace('/screens/Audits/CompletedAuditsScreen');
+      router.replace('/screens/Audits/MyAuditsScreen');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Nie udalo sie zapisac audytu');
+      const message = err instanceof Error ? err.message : 'Nie udalo sie zapisac audytu';
+      setError(message);
+      Alert.alert('Błąd zapisu audytu', message);
     } finally {
       setFinalizing(false);
     }
@@ -227,7 +260,10 @@ export default function AuditDetailsScreen() {
     try {
       setFinalizing(true);
       await reopenAudit(audit.id);
-      router.replace('/screens/Audits/MyAuditsScreen');
+      const nextScreen = userRole === 'MANAGER' || userRole === 'ADMIN'
+        ? '/screens/Audits/CompletedAuditsScreen'
+        : '/screens/Audits/MyAuditsScreen';
+      router.replace(nextScreen);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Nie udalo sie przywrocic audytu');
     } finally {
@@ -302,20 +338,27 @@ export default function AuditDetailsScreen() {
                   gpsLat: gpsData ? String(gpsData.latitude) : '',
                   gpsLng: gpsData ? String(gpsData.longitude) : '',
                   gpsCity: gpsData?.city ?? '',
+                  readonly: canFinalize ? 'false' : 'true',
                 },
               })
             }
           >
-            <Text style={styles.primaryButtonText}>Przejdz do zadan audytu</Text>
+            <Text style={styles.primaryButtonText}>{canFinalize ? 'Przejdz do zadan audytu' : 'Podglad zadan audytu'}</Text>
           </Pressable>
 
-          <Pressable
-            style={[styles.secondaryButton, finalizing && styles.buttonDisabled]}
-            onPress={handleFinalizeAudit}
-            disabled={finalizing}
-          >
-            <Text style={styles.secondaryButtonText}>{finalizing ? 'Zapisywanie...' : 'Zapisz audyt'}</Text>
-          </Pressable>
+          {canFinalize ? (
+            <Pressable
+              style={[styles.secondaryButton, finalizing && styles.buttonDisabled]}
+              onPress={handleFinalizeAudit}
+              disabled={finalizing}
+            >
+              <Text style={styles.secondaryButtonText}>{finalizing ? 'Zapisywanie...' : 'Zapisz audyt'}</Text>
+            </Pressable>
+          ) : (
+            <View style={styles.readonlyBox}>
+              <Text style={styles.readonlyText}>Tylko audytor przypisany do audytu moze go zamknac.</Text>
+            </View>
+          )}
         </View>
       ) : (
         <View style={styles.actionBlock}>
@@ -327,13 +370,15 @@ export default function AuditDetailsScreen() {
             <Text style={styles.primaryButtonText}>Przejdz do podgladu zadan</Text>
           </Pressable>
 
-          <Pressable
-            style={[styles.secondaryButton, finalizing && styles.buttonDisabled]}
-            onPress={handleReopenAudit}
-            disabled={finalizing}
-          >
-            <Text style={styles.secondaryButtonText}>{finalizing ? 'Przywracanie...' : 'Wroc do wykonania'}</Text>
-          </Pressable>
+          {canReopen ? (
+            <Pressable
+              style={[styles.secondaryButton, finalizing && styles.buttonDisabled]}
+              onPress={handleReopenAudit}
+              disabled={finalizing}
+            >
+              <Text style={styles.secondaryButtonText}>{finalizing ? 'Przywracanie...' : 'Wroc do wykonania'}</Text>
+            </Pressable>
+          ) : null}
         </View>
       )}
     </View>

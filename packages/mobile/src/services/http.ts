@@ -16,6 +16,10 @@ type RequestOptions = Omit<RequestInit, 'body'> & {
   auth?: boolean;
 };
 
+export type HttpRequestError = Error & {
+  statusCode?: number;
+};
+
 async function parseResponse<T>(response: Response): Promise<T> {
   const rawBody = await response.text();
 
@@ -57,7 +61,9 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
       (data && typeof data === 'object' && 'error' in data && data.error) ||
       (data && typeof data === 'object' && 'message' in data && data.message) ||
       `HTTP ${response.status}`;
-    throw new Error(errorMessage);
+    const error = new Error(errorMessage) as HttpRequestError;
+    error.statusCode = response.status;
+    throw error;
   }
 
   return data as T;
@@ -69,4 +75,12 @@ export function get<T>(path: string, options: Omit<RequestOptions, 'method' | 'b
 
 export function post<T>(path: string, body?: unknown, options: Omit<RequestOptions, 'method'> = {}) {
   return request<T>(path, { ...options, method: 'POST', body });
+}
+
+export function put<T>(path: string, body?: unknown, options: Omit<RequestOptions, 'method'> = {}) {
+  return request<T>(path, { ...options, method: 'PUT', body });
+}
+
+export function patch<T>(path: string, body?: unknown, options: Omit<RequestOptions, 'method'> = {}) {
+  return request<T>(path, { ...options, method: 'PATCH', body });
 }
