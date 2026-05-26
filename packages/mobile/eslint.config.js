@@ -36,7 +36,6 @@ export default [
         Blob: 'readonly',
         FileReader: 'readonly',
         __d: 'readonly',
-        Realm: 'readonly',
         AbortController: 'readonly',
         jest: 'readonly',
         describe: 'readonly',

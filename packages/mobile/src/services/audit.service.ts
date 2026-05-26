@@ -69,6 +69,128 @@ export type SubmitAuditResultsPayload = {
   completedAt?: string;
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function asString(value: unknown, fallback = 'Brak danych'): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (isRecord(value)) {
+    const firstName = value.firstName;
+    const lastName = value.lastName;
+    if (typeof firstName === 'string' || typeof lastName === 'string') {
+      return [firstName, lastName].filter((part) => typeof part === 'string' && part.trim().length > 0).join(' ');
+    }
+
+    if (typeof value.name === 'string') {
+      return value.name;
+    }
+  }
+  return fallback;
+}
+
+function toAuditStatus(value: unknown): AuditStatus {
+  if (value === 'NEW' || value === 'IN_PROGRESS' || value === 'COMPLETED') {
+    return value;
+  }
+  return 'NEW';
+}
+
+function normalizeAuditListItem(item: unknown): AuditListItem | null {
+  if (!isRecord(item)) {
+    return null;
+  }
+
+  const store = isRecord(item.store) ? item.store : null;
+
+  const id = asString(item.id, '').trim();
+  if (!id) {
+    return null;
+  }
+
+  return {
+    id,
+    storeName: asString(item.storeName ?? store?.name, 'Nieznany sklep'),
+    city: asString(item.city ?? store?.city, 'Nieznane miasto'),
+    deadline: asString(item.deadline, 'Brak terminu'),
+    status: toAuditStatus(item.status),
+  };
+}
+
+function normalizeAuditDetails(payload: unknown): AuditDetails {
+  const item = isRecord(payload) ? payload : {};
+  const store = isRecord(item.store) ? item.store : null;
+  const template = isRecord(item.template) ? item.template : null;
+  const templateCategories = Array.isArray(template?.categories) ? template.categories : [];
+  const results = Array.isArray(item.results) ? item.results : [];
+
+  const completedByChecklistItem = new Set<string>(
+    results
+      .map((result) => {
+        if (!isRecord(result)) {
+          return '';
+        }
+        const checklistItemId = result.checklistItemId;
+        const status = result.status;
+        if (typeof checklistItemId !== 'string' || !status) {
+          return '';
+        }
+        return checklistItemId;
+      })
+      .filter((id) => id.length > 0),
+  );
+
+  const categories: AuditCategorySummary[] = templateCategories
+    .map((category, index) => {
+      if (!isRecord(category)) {
+        return null;
+      }
+      const items = Array.isArray(category.items) ? category.items : [];
+      const completedCount = items.filter((entry) => {
+        if (!isRecord(entry) || typeof entry.id !== 'string') {
+          return false;
+        }
+        return completedByChecklistItem.has(entry.id);
+      }).length;
+
+      return {
+        id: asString(category.id, `cat-${index + 1}`),
+        name: asString(category.name, `Kategoria ${index + 1}`),
+        itemsCount: items.length,
+        completedCount,
+      };
+    })
+    .filter((category): category is AuditCategorySummary => category !== null);
+
+  const gpsLat = typeof item.gpsLat === 'number' ? item.gpsLat : null;
+  const gpsLng = typeof item.gpsLng === 'number' ? item.gpsLng : null;
+
+  return {
+    id: asString(item.id, ''),
+    storeName: asString(item.storeName ?? store?.name, 'Nieznany sklep'),
+    city: asString(item.city ?? store?.city, 'Nieznane miasto'),
+    deadline: asString(item.deadline, 'Brak terminu'),
+    status: toAuditStatus(item.status),
+    auditor: asString(item.auditor, 'Nie przypisano'),
+    categories,
+    location:
+      gpsLat !== null && gpsLng !== null
+        ? {
+            latitude: gpsLat,
+            longitude: gpsLng,
+            city: typeof item.resolvedAddress === 'string' ? item.resolvedAddress : undefined,
+            capturedAt: typeof item.startedAt === 'string' ? item.startedAt : undefined,
+          }
+        : null,
+    completedAt: typeof item.completedAt === 'string' ? item.completedAt : undefined,
+  };
+}
+
 function shouldFallbackToOffline(error: unknown): boolean {
   if (!(error instanceof Error)) {
     return false;
@@ -115,9 +237,14 @@ async function trySyncPendingSubmissions(): Promise<void> {
 export async function getMyAudits(): Promise<AuditListItem[]> {
   try {
     await trySyncPendingSubmissions();
-    const remote = await get<AuditListItem[]>('/audits');
-    await cacheRemoteAuditsList(remote);
-    return remote;
+    const remote = await get<unknown[]>('/audits');
+    const normalized = Array.isArray(remote)
+      ? remote
+          .map(normalizeAuditListItem)
+          .filter((item): item is AuditListItem => item !== null)
+      : [];
+    await cacheRemoteAuditsList(normalized);
+    return normalized;
   } catch (error) {
     if (!shouldFallbackToOffline(error)) {
       throw error;
@@ -138,9 +265,10 @@ export async function getCompletedAudits(): Promise<AuditListItem[]> {
 
 export async function getAuditDetails(auditId: string): Promise<AuditDetails> {
   try {
-    const remote = await get<AuditDetails>(`/audits/${auditId}`);
-    await cacheRemoteAuditDetails(remote);
-    return remote;
+    const remote = await get<unknown>(`/audits/${auditId}`);
+    const normalized = normalizeAuditDetails(remote);
+    await cacheRemoteAuditDetails(normalized);
+    return normalized;
   } catch (error) {
     if (!shouldFallbackToOffline(error)) {
       throw error;

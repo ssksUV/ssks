@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "ssksmobile",
+    "jsEngine": "jsc",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -26,7 +27,11 @@
         "backgroundColor": "#ffffff"
       },
       "package": "pl.ssks.mobile",
-      "permissions": ["CAMERA", "ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+      "permissions": [
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -34,7 +39,6 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router",
       [
         "expo-location",
         {

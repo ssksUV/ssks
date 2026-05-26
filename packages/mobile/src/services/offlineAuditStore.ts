@@ -211,20 +211,62 @@ function recomputeCategories(tasks: AuditTask[]): AuditDetails['categories'] {
   }));
 }
 
+function normalizeText(value: unknown, fallback: string): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    const firstName = typeof record.firstName === 'string' ? record.firstName : '';
+    const lastName = typeof record.lastName === 'string' ? record.lastName : '';
+    const fullName = [firstName, lastName].filter((part) => part.trim().length > 0).join(' ').trim();
+    if (fullName) {
+      return fullName;
+    }
+    if (typeof record.name === 'string') {
+      return record.name;
+    }
+  }
+  return fallback;
+}
+
+function normalizeCachedAudit(audit: AuditDetails): AuditDetails {
+  return {
+    ...audit,
+    storeName: normalizeText((audit as unknown as Record<string, unknown>).storeName, 'Nieznany sklep'),
+    city: normalizeText((audit as unknown as Record<string, unknown>).city, 'Nieznane miasto'),
+    deadline: normalizeText((audit as unknown as Record<string, unknown>).deadline, new Date().toISOString()),
+    auditor: normalizeText((audit as unknown as Record<string, unknown>).auditor, 'Nie przypisano'),
+  };
+}
+
 function normalizeBundle(bundle: OfflineAuditBundle): { bundle: OfflineAuditBundle; changed: boolean } {
   let changed = false;
 
   const audits = bundle.audits.map((audit) => {
-    if (audit.status !== 'COMPLETED' || audit.completedAt) {
-      return audit;
+    const normalizedAudit = normalizeCachedAudit(audit);
+    if (
+      normalizedAudit.storeName !== audit.storeName ||
+      normalizedAudit.city !== audit.city ||
+      normalizedAudit.deadline !== audit.deadline ||
+      normalizedAudit.auditor !== audit.auditor
+    ) {
+      changed = true;
     }
 
-    const tasks = bundle.tasksByAuditId[audit.id] ?? [];
+    if (normalizedAudit.status !== 'COMPLETED' || normalizedAudit.completedAt) {
+      return normalizedAudit;
+    }
+
+    const tasks = bundle.tasksByAuditId[normalizedAudit.id] ?? [];
     const normalizedStatus = computeDraftStatus(tasks);
 
     changed = true;
     return {
-      ...audit,
+      ...normalizedAudit,
       status: normalizedStatus,
       completedAt: undefined,
     };
