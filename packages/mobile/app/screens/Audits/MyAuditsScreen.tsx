@@ -6,6 +6,28 @@ import { useFocusEffect } from '@react-navigation/native';
 
 import { AuditListItem, AuditStatus, getActiveAudits } from '../../../src/services/audit.service';
 
+function toDisplayText(value: unknown, fallback: string): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    if (typeof record.name === 'string') {
+      return record.name;
+    }
+    const firstName = typeof record.firstName === 'string' ? record.firstName : '';
+    const lastName = typeof record.lastName === 'string' ? record.lastName : '';
+    const fullName = [firstName, lastName].filter((part) => part.trim().length > 0).join(' ').trim();
+    if (fullName) {
+      return fullName;
+    }
+  }
+  return fallback;
+}
+
 function getStatusLabel(status: AuditStatus) {
   switch (status) {
     case 'NEW':
@@ -77,12 +99,16 @@ export default function MyAuditsScreen() {
         data={audits}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
+        renderItem={({ item }) => {
+          const storeName = toDisplayText((item as unknown as Record<string, unknown>).storeName, 'Nieznany sklep');
+          const city = toDisplayText((item as unknown as Record<string, unknown>).city, 'Nieznane miasto');
+          const deadline = toDisplayText((item as unknown as Record<string, unknown>).deadline, 'Brak terminu');
+
+          return <View style={styles.card}>
             <View style={styles.cardHeader}>
               <View style={styles.cardTitleWrapper}>
-                <Text style={styles.storeName}>{item.storeName}</Text>
-                <Text style={styles.city}>{item.city}</Text>
+                <Text style={styles.storeName}>{storeName}</Text>
+                <Text style={styles.city}>{city}</Text>
               </View>
               <View style={[styles.statusBadge, getStatusStyle(item.status)]}>
                 <Text style={styles.statusText}>{getStatusLabel(item.status)}</Text>
@@ -91,7 +117,7 @@ export default function MyAuditsScreen() {
 
             <View style={styles.metaRow}>
               <Text style={styles.metaLabel}>Termin:</Text>
-              <Text style={styles.metaValue}>{item.deadline}</Text>
+              <Text style={styles.metaValue}>{deadline}</Text>
             </View>
 
             <Pressable
@@ -102,8 +128,8 @@ export default function MyAuditsScreen() {
             >
               <Text style={styles.openButtonText}>Otwórz audyt</Text>
             </Pressable>
-          </View>
-        )}
+          </View>;
+        }}
       />
     </View>
   );

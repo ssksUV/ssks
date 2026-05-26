@@ -24,6 +24,28 @@ export default function AuditDetailsScreen() {
   const [gpsData, setGpsData] = useState<{ latitude: number; longitude: number; city?: string } | null>(null);
   const { getLocation } = useCurrentLocation();
 
+  const toDisplayText = (value: unknown, fallback = 'Brak danych') => {
+    if (typeof value === 'string') {
+      return value;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
+    if (value && typeof value === 'object') {
+      const record = value as Record<string, unknown>;
+      const firstName = typeof record.firstName === 'string' ? record.firstName : '';
+      const lastName = typeof record.lastName === 'string' ? record.lastName : '';
+      const fullName = [firstName, lastName].filter((part) => part.trim().length > 0).join(' ').trim();
+      if (fullName) {
+        return fullName;
+      }
+      if (typeof record.name === 'string') {
+        return record.name;
+      }
+    }
+    return fallback;
+  };
+
   const formatGpsLabel = (location: { latitude: number; longitude: number; city?: string }, prefix = 'GPS') => {
     const city = location.city?.trim();
     const cityPart = city && city.length > 0 ? city : 'Nieznane miasto';
@@ -154,6 +176,11 @@ export default function AuditDetailsScreen() {
   }
 
   const isCompleted = audit.status === 'COMPLETED';
+  const storeNameLabel = toDisplayText((audit as unknown as Record<string, unknown>).storeName, 'Nieznany sklep');
+  const cityLabel = toDisplayText((audit as unknown as Record<string, unknown>).city, 'Nieznane miasto');
+  const deadlineLabel = toDisplayText((audit as unknown as Record<string, unknown>).deadline, 'Brak terminu');
+  const auditorLabel = toDisplayText((audit as unknown as Record<string, unknown>).auditor, 'Nie przypisano');
+  const statusLabel = toDisplayText((audit as unknown as Record<string, unknown>).status, 'Brak statusu');
 
   const handleFinalizeAudit = async () => {
     try {
@@ -217,23 +244,23 @@ export default function AuditDetailsScreen() {
       <View style={styles.summaryCard}>
         <View style={styles.summaryHeader}>
           <View style={styles.summaryTitleWrapper}>
-            <Text style={styles.storeName}>{audit.storeName}</Text>
+            <Text style={styles.storeName}>{storeNameLabel}</Text>
             <Text style={styles.gpsText}>{gpsLabel}</Text>
-            <Text style={styles.city}>{audit.city}</Text>
+            <Text style={styles.city}>{cityLabel}</Text>
           </View>
           <View style={styles.statusBadge}>
-            <Text style={styles.statusText}>{audit.status}</Text>
+            <Text style={styles.statusText}>{statusLabel}</Text>
           </View>
         </View>
 
         <View style={styles.metaRow}>
           <Text style={styles.metaLabel}>Termin:</Text>
-          <Text style={styles.metaValue}>{audit.deadline}</Text>
+          <Text style={styles.metaValue}>{deadlineLabel}</Text>
         </View>
 
         <View style={styles.metaRow}>
           <Text style={styles.metaLabel}>Audytor:</Text>
-          <Text style={styles.metaValue}>{audit.auditor}</Text>
+          <Text style={styles.metaValue}>{auditorLabel}</Text>
         </View>
       </View>
 
