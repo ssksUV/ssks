@@ -182,3 +182,16 @@
       data: { status: 'COMPLETED', completedAt: new Date() },
     });
   }
+
+  export async function reopenAudit(tenantId: string, auditId: string) {
+    const audit = await prisma.audit.findFirst({
+      where: { id: auditId, tenantId },
+    });
+    if (!audit) return null;
+    if (audit.status !== 'COMPLETED') return { conflict: true };
+
+    return prisma.audit.update({
+      where: { id: auditId },
+      data: { status: 'NEW', completedAt: null },
+    });
+  }

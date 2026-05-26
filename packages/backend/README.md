@@ -122,6 +122,7 @@ prisma/
 | PATCH | `/api/audits/:id/start` | Rozpoczęcie audytu (status → IN_PROGRESS) | AUDITOR |
 | PUT | `/api/audits/:id/results` | Zapis wyników punktów kontrolnych | AUDITOR |
 | PATCH | `/api/audits/:id/complete` | Zakończenie audytu (status → COMPLETED) | AUDITOR |
+| PATCH | `/api/audits/:id/reopen` | Ponowne otwarcie audytu (status → IN_PROGRESS) | MANAGER |
 | GET | `/api/audits/:id/pdf` | Pobranie raportu PDF (tylko COMPLETED) | MANAGER, AUDITOR |
 
 ### Uploads
