@@ -266,19 +266,7 @@ function normalizeBundle(bundle: OfflineAuditBundle): { bundle: OfflineAuditBund
       changed = true;
     }
 
-    if (normalizedAudit.status !== 'COMPLETED' || normalizedAudit.completedAt) {
-      return normalizedAudit;
-    }
-
-    const tasks = bundle.tasksByAuditId[normalizedAudit.id] ?? [];
-    const normalizedStatus = computeDraftStatus(tasks);
-
-    changed = true;
-    return {
-      ...normalizedAudit,
-      status: normalizedStatus,
-      completedAt: undefined,
-    };
+    return normalizedAudit;
   });
 
   if (!changed) {
