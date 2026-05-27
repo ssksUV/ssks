@@ -25,18 +25,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let isMounted = true;
 
     const restoreSession = async () => {
-      const session = await validateSession();
+      try {
+        const session = await Promise.race<AuthSession | null>([
+          validateSession(),
+          new Promise<null>((resolve) => {
+            setTimeout(() => resolve(null), 3000);
+          }),
+        ]);
 
-      if (!isMounted) {
-        return;
+        if (!isMounted) {
+          return;
+        }
+
+        if (session) {
+          setToken(session.token);
+          setUser(session.user);
+        }
+      } finally {
+        if (isMounted) {
+          setIsReady(true);
+        }
       }
-
-      if (session) {
-        setToken(session.token);
-        setUser(session.user);
-      }
-
-      setIsReady(true);
     };
 
     void restoreSession();

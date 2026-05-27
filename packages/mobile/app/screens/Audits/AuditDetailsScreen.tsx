@@ -246,12 +246,12 @@ export default function AuditDetailsScreen() {
     }
   };
 
-  const handleOpenReadonlyTasks = () => {
+  const handleOpenTasks = () => {
     router.push({
       pathname: '/screens/Audits/AuditCarouselScreen',
       params: {
         auditId: audit.id,
-        readonly: 'true',
+        readonly: isCompleted ? 'true' : 'false',
       },
     });
   };
@@ -270,6 +270,48 @@ export default function AuditDetailsScreen() {
       setFinalizing(false);
     }
   };
+
+  const actionSection = !isCompleted ? (
+    <View style={styles.actionBlock}>
+      <Pressable style={styles.primaryButton} onPress={handleOpenTasks}>
+        <Text style={styles.primaryButtonText}>{canFinalize ? 'Edytuj karte audytu' : 'Podglad zadan audytu'}</Text>
+      </Pressable>
+
+      {canFinalize ? (
+        <Pressable
+          style={[styles.secondaryButton, finalizing && styles.buttonDisabled]}
+          onPress={handleFinalizeAudit}
+          disabled={finalizing}
+        >
+          <Text style={styles.secondaryButtonText}>{finalizing ? 'Zapisywanie...' : 'Zapisz audyt'}</Text>
+        </Pressable>
+      ) : (
+        <View style={styles.readonlyBox}>
+          <Text style={styles.readonlyText}>Tylko audytor przypisany do audytu moze go zamknac.</Text>
+        </View>
+      )}
+    </View>
+  ) : (
+    <View style={styles.actionBlock}>
+      <View style={styles.readonlyBox}>
+        <Text style={styles.readonlyText}>Audyt zakonczony - podglad tylko do odczytu.</Text>
+      </View>
+
+          <Pressable style={styles.primaryButton} onPress={handleOpenTasks}>
+        <Text style={styles.primaryButtonText}>Przejdz do podgladu zadan</Text>
+      </Pressable>
+
+      {canReopen ? (
+        <Pressable
+          style={[styles.secondaryButton, finalizing && styles.buttonDisabled]}
+          onPress={handleReopenAudit}
+          disabled={finalizing}
+        >
+          <Text style={styles.secondaryButtonText}>{finalizing ? 'Przywracanie...' : 'Wroc do wykonania'}</Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
 
   return (
     <View style={styles.container}>
@@ -306,6 +348,7 @@ export default function AuditDetailsScreen() {
         data={audit.categories}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
+        ListFooterComponent={<View style={styles.listFooter}>{actionSection}</View>}
         renderItem={({ item }) => (
           <View style={styles.categoryCard}>
             <View style={styles.categoryHeader}>
@@ -325,62 +368,6 @@ export default function AuditDetailsScreen() {
           </View>
         )}
       />
-
-      {!isCompleted ? (
-        <View style={styles.actionBlock}>
-          <Pressable
-            style={styles.primaryButton}
-            onPress={() =>
-              router.push({
-                pathname: '/screens/Audits/AuditCarouselScreen',
-                params: {
-                  auditId: audit.id,
-                  gpsLat: gpsData ? String(gpsData.latitude) : '',
-                  gpsLng: gpsData ? String(gpsData.longitude) : '',
-                  gpsCity: gpsData?.city ?? '',
-                  readonly: canFinalize ? 'false' : 'true',
-                },
-              })
-            }
-          >
-            <Text style={styles.primaryButtonText}>{canFinalize ? 'Przejdz do zadan audytu' : 'Podglad zadan audytu'}</Text>
-          </Pressable>
-
-          {canFinalize ? (
-            <Pressable
-              style={[styles.secondaryButton, finalizing && styles.buttonDisabled]}
-              onPress={handleFinalizeAudit}
-              disabled={finalizing}
-            >
-              <Text style={styles.secondaryButtonText}>{finalizing ? 'Zapisywanie...' : 'Zapisz audyt'}</Text>
-            </Pressable>
-          ) : (
-            <View style={styles.readonlyBox}>
-              <Text style={styles.readonlyText}>Tylko audytor przypisany do audytu moze go zamknac.</Text>
-            </View>
-          )}
-        </View>
-      ) : (
-        <View style={styles.actionBlock}>
-          <View style={styles.readonlyBox}>
-            <Text style={styles.readonlyText}>Audyt zakonczony - podglad tylko do odczytu.</Text>
-          </View>
-
-          <Pressable style={styles.primaryButton} onPress={handleOpenReadonlyTasks}>
-            <Text style={styles.primaryButtonText}>Przejdz do podgladu zadan</Text>
-          </Pressable>
-
-          {canReopen ? (
-            <Pressable
-              style={[styles.secondaryButton, finalizing && styles.buttonDisabled]}
-              onPress={handleReopenAudit}
-              disabled={finalizing}
-            >
-              <Text style={styles.secondaryButtonText}>{finalizing ? 'Przywracanie...' : 'Wroc do wykonania'}</Text>
-            </Pressable>
-          ) : null}
-        </View>
-      )}
     </View>
   );
 }
@@ -492,7 +479,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   listContent: {
-    paddingBottom: 16,
+    paddingBottom: 112,
+  },
+  listFooter: {
+    marginTop: 6,
   },
   categoryCard: {
     backgroundColor: '#ffffff',

@@ -11,17 +11,31 @@ import {
   Image,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AuditTask, getAuditTasks, saveAuditDraft } from '../../../src/services/audit.service';
+import { API_BASE_URL } from '../../../src/services/http';
+import { useAuth } from '../../../src/context/AuthContext';
 import { useCameraCapture } from '../../../src/hooks/useCamera';
+
+const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '');
+
+function resolvePhotoUri(uri: string): string {
+  if (uri.startsWith('/uploads/')) {
+    return `${API_ORIGIN}${uri}`;
+  }
+  return uri;
+}
 
 export default function AuditCarouselScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { auditId, readonly } = useLocalSearchParams<{
     auditId?: string;
     readonly?: string;
   }>();
-  const isReadonly = readonly === 'true';
+  const { user } = useAuth();
+  const isReadonly = readonly === 'true' || user?.role !== 'AUDITOR';
   const [tasks, setTasks] = useState<AuditTask[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -224,7 +238,7 @@ export default function AuditCarouselScreen() {
           {currentTask.photoUris.length > 0 && (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoList}>
               {currentTask.photoUris.map((photoUri) => (
-                <Image key={photoUri} source={{ uri: photoUri }} style={styles.photoThumbnail} />
+                <Image key={photoUri} source={{ uri: resolvePhotoUri(photoUri) }} style={styles.photoThumbnail} />
               ))}
             </ScrollView>
           )}
@@ -233,7 +247,7 @@ export default function AuditCarouselScreen() {
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: 36 + insets.bottom }]}>
         <Pressable
           style={[styles.footerButton, currentIndex === 0 && styles.footerButtonDisabled]}
           onPress={goToPrevious}
@@ -475,6 +489,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     paddingTop: 12,
+    paddingBottom: 4,
   },
   footerButton: {
     flex: 1,

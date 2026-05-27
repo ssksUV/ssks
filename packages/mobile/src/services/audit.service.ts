@@ -457,7 +457,7 @@ async function syncSubmission(auditId: string, payload: SubmitAuditResultsPayloa
       throw error;
     }
 
-    await patch<void>(`/audits/${auditId}/start`);
+    await patch<void>(`/audits/${auditId}/start`, {});
     await put<void>(`/audits/${auditId}/results`, { results });
   }
 
@@ -477,7 +477,7 @@ async function syncSubmission(auditId: string, payload: SubmitAuditResultsPayloa
 
 export async function getMyAudits(): Promise<AuditListItem[]> {
   try {
-    await trySyncPendingSubmissions();
+    void trySyncPendingSubmissions().catch(() => undefined);
     const remote = await get<unknown[]>('/audits');
     const normalized = Array.isArray(remote)
       ? remote
@@ -501,7 +501,7 @@ export async function getActiveAudits(): Promise<AuditListItem[]> {
 
 export async function getCompletedAudits(): Promise<AuditListItem[]> {
   try {
-    await trySyncPendingSubmissions();
+    void trySyncPendingSubmissions().catch(() => undefined);
     const remote = await get<unknown[]>('/audits');
     const normalized = Array.isArray(remote)
       ? remote
@@ -634,7 +634,7 @@ export async function startAudit(auditId: string, location: AuditLocation | null
         gpsLng: location.longitude,
         resolvedAddress: location.city,
       }
-    : undefined;
+    : {};
 
   try {
     await patch<void>(`/audits/${auditId}/start`, body);

@@ -1,7 +1,46 @@
 import { getStoredToken } from './tokenStorage';
-import { Platform } from 'react-native';
+import { NativeModules, Platform } from 'react-native';
+import Constants from 'expo-constants';
+
+const REQUEST_TIMEOUT_MS = 15000;
+
+function getExpoHost(): string | null {
+  const debuggerHost =
+    (Constants as { expoGoConfig?: { debuggerHost?: string } }).expoGoConfig?.debuggerHost ??
+    (Constants as { expoConfig?: { hostUri?: string } }).expoConfig?.hostUri ??
+    null;
+
+  if (!debuggerHost || typeof debuggerHost !== 'string') {
+    return null;
+  }
+
+  const host = debuggerHost.split(':')[0]?.trim();
+  return host && host.length > 0 ? host : null;
+}
+
+function getHostFromScriptUrl(): string | null {
+  const sourceCode = (NativeModules as { SourceCode?: { scriptURL?: string } }).SourceCode;
+  const scriptUrl = sourceCode?.scriptURL;
+
+  if (!scriptUrl || typeof scriptUrl !== 'string') {
+    return null;
+  }
+
+  const match = scriptUrl.match(/^[a-z]+:\/\/([^/:?#]+)/i);
+  if (match?.[1]) {
+    return match[1];
+  }
+
+  const fallbackMatch = scriptUrl.match(/^([^/:?#]+)/);
+  return fallbackMatch?.[1] ?? null;
+}
 
 function getDefaultApiBaseUrl(): string {
+  const detectedHost = getExpoHost() ?? getHostFromScriptUrl();
+  if (detectedHost) {
+    return `http://${detectedHost}:3000/api`;
+  }
+
   if (Platform.OS === 'android') {
     // Android emulator maps host machine localhost to 10.0.2.2
     return 'http://10.0.2.2:3000/api';
@@ -48,11 +87,25 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     }
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers,
+      signal: options.signal ?? controller.signal,
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Network timeout');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   const data = await parseResponse<{ error?: string; message?: string } & T>(response);
 

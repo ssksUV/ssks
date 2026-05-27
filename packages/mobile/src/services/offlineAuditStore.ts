@@ -1,4 +1,5 @@
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
+import { Platform } from 'react-native';
 
 import type { AuditDetails, AuditListItem, AuditTask, SubmitAuditResultsPayload } from './audit.service';
 
@@ -15,6 +16,23 @@ type OfflineAuditBundle = {
 
 const OFFLINE_DIR = FileSystem.documentDirectory ? `${FileSystem.documentDirectory}audit-data/` : null;
 const OFFLINE_FILE = OFFLINE_DIR ? `${OFFLINE_DIR}offline-audits.json` : null;
+const WEB_STORAGE_KEY = 'ssks.offline.audits.v1';
+
+function getWebStorage(): Storage | null {
+  if (Platform.OS !== 'web') {
+    return null;
+  }
+
+  if (typeof globalThis === 'undefined') {
+    return null;
+  }
+
+  if (!('localStorage' in globalThis)) {
+    return null;
+  }
+
+  return globalThis.localStorage;
+}
 
 function createSeedData(): OfflineAuditBundle {
   const now = new Date();
@@ -128,7 +146,16 @@ function createSeedData(): OfflineAuditBundle {
 
 async function ensureFile(): Promise<void> {
   if (!OFFLINE_DIR || !OFFLINE_FILE) {
-    throw new Error('Offline storage unavailable');
+    const storage = getWebStorage();
+    if (!storage) {
+      throw new Error('Offline storage unavailable');
+    }
+
+    const existing = storage.getItem(WEB_STORAGE_KEY);
+    if (!existing) {
+      storage.setItem(WEB_STORAGE_KEY, JSON.stringify(createSeedData()));
+    }
+    return;
   }
 
   const dirInfo = await FileSystem.getInfoAsync(OFFLINE_DIR);
@@ -146,7 +173,32 @@ async function readBundle(): Promise<OfflineAuditBundle> {
   await ensureFile();
 
   if (!OFFLINE_FILE) {
-    return createSeedData();
+    const storage = getWebStorage();
+    if (!storage) {
+      throw new Error('Offline storage unavailable');
+    }
+
+    const rawFromStorage = storage.getItem(WEB_STORAGE_KEY) ?? '';
+    if (!rawFromStorage.trim()) {
+      const seed = createSeedData();
+      storage.setItem(WEB_STORAGE_KEY, JSON.stringify(seed));
+      return seed;
+    }
+
+    try {
+      const parsed = JSON.parse(rawFromStorage) as OfflineAuditBundle;
+      const normalized = normalizeBundle(parsed);
+
+      if (normalized.changed) {
+        storage.setItem(WEB_STORAGE_KEY, JSON.stringify(normalized.bundle));
+      }
+
+      return normalized.bundle;
+    } catch {
+      const seed = createSeedData();
+      storage.setItem(WEB_STORAGE_KEY, JSON.stringify(seed));
+      return seed;
+    }
   }
 
   const raw = await FileSystem.readAsStringAsync(OFFLINE_FILE);
@@ -176,7 +228,12 @@ async function writeBundle(bundle: OfflineAuditBundle): Promise<void> {
   await ensureFile();
 
   if (!OFFLINE_FILE) {
-    throw new Error('Offline storage unavailable');
+    const storage = getWebStorage();
+    if (!storage) {
+      throw new Error('Offline storage unavailable');
+    }
+    storage.setItem(WEB_STORAGE_KEY, JSON.stringify(bundle));
+    return;
   }
 
   await FileSystem.writeAsStringAsync(OFFLINE_FILE, JSON.stringify(bundle));
