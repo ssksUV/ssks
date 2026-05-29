@@ -65,6 +65,11 @@ export function AppLayout() {
       roles: ['MANAGER'],
     },
     {
+      key: '/templates',
+      label: <Link to="/templates">Szablony</Link>,
+      roles: ['MANAGER'],
+    },
+    {
       key: '/audits',
       label: <Link to="/audits">Audyty</Link>,
       roles: ['AUDITOR','MANAGER'],

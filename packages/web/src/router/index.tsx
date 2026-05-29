@@ -10,6 +10,8 @@ import StorePage from '../pages/StorePage';
 import ProfilePage from '../pages/ProfilePage';
 import AuditsPage from '../pages/AuditsPage';
 import AuditDetailsPage from '../pages/AuditsDetailsPage';
+import TemplatesPage from '../pages/TemplatePage';
+import TemplateDetailsPage from '../pages/TemplateDetailsPage';
 
 async function requireAuth() {
   const token = localStorage.getItem('token');
@@ -43,6 +45,8 @@ export const router = createBrowserRouter([
       { path: 'users', element: <UsersPage /> },
       { path: 'profile', element: <ProfilePage /> },
       { path: 'audits/:id', element: <AuditDetailsPage /> },
+      { path: 'templates', element: <TemplatesPage /> },
+      { path: 'templates/:id/edit', element: <TemplateDetailsPage /> },
       
     ],
   },
