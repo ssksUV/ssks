@@ -51,7 +51,7 @@ export const auditService = {
   },
 
   downloadAuditPdf: async (id: string) => {
-    const res = await http.get(`/audits/${id}.pdf`, {
+    const res = await http.get(`/audits/${id}/pdf`, {
       responseType: 'blob',
     });
 

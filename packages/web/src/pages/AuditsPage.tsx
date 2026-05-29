@@ -225,14 +225,13 @@ export default function AuditsPage() {
       )}
 
       {record.status === 'COMPLETED' && (
-        <Button
-          type="link"
-          href={auditService.getAuditPdfUrl(record.id)}
-          target="_blank"
-        >
-          PDF
-        </Button>
-      )}
+  <Button
+    type="link"
+    onClick={() => auditService.openAuditPdf(record.id)}
+  >
+    PDF
+  </Button>
+)}
     </Space>
   ),
 }
