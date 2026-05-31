@@ -52,7 +52,7 @@ export function AppLayout() {
     {
       key: '/',
       label: <Link to="/">Panel</Link>,
-      roles: ['ADMIN', 'MANAGER'],
+      roles: ['ADMIN', 'MANAGER', 'AUDITOR'],
     },
     {
       key: '/tenants',
