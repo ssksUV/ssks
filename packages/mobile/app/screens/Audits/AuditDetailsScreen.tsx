@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, View, Text, StyleSheet, Pressable, FlatList, Alert } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 
 import {
   AuditDetails,

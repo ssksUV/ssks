@@ -2,7 +2,7 @@
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, View, Text, StyleSheet, Pressable, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router';
 
 import { AuditListItem, AuditStatus, getActiveAudits } from '../../../src/services/audit.service';
 
