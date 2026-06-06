@@ -219,7 +219,11 @@ export default function AuditDetailsScreen() {
       }
 
       if (tasks.some((task) => task.status === null)) {
+        const missingCount = tasks.filter((task) => task.status === null).length;
+        const missingLabel = missingCount === 1 ? 'punkt' : 'punkty';
+        const message = `Wypelnij wszystkie zadania audytu. Brakuje: ${missingCount} ${missingLabel}.`;
         setError('Uzupelnij wszystkie punkty audytu przed finalnym zapisem.');
+        Alert.alert('Brakujace zadania audytu', message);
         return;
       }
 
