@@ -105,6 +105,7 @@ async function uploadPhotoIfNeeded(uri: string): Promise<string> {
   } as unknown as Blob);
 
   const headers = new Headers();
+  headers.set('ngrok-skip-browser-warning', 'true');
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }
