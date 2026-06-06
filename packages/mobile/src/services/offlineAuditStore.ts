@@ -14,7 +14,7 @@ type OfflineAuditBundle = {
   }>;
 };
 
-const OFFLINE_DIR = FileSystem.documentDirectory ? `${FileSystem.documentDirectory}audit-data/` : null;
+const OFFLINE_DIR = Platform.OS === 'web' ? null : (FileSystem.documentDirectory ? `${FileSystem.documentDirectory}audit-data/` : null);
 const OFFLINE_FILE = OFFLINE_DIR ? `${OFFLINE_DIR}offline-audits.json` : null;
 const WEB_STORAGE_KEY = 'ssks.offline.audits.v1';
 
