@@ -259,6 +259,43 @@ function toResultStatus(value: unknown): ResultStatus {
   return null;
 }
 
+function splitResponsibleFromNote(rawNote: string): { note: string; responsiblePerson: string } {
+  const lines = rawNote.split('\n');
+  let responsiblePerson = '';
+
+  const noteLines = lines.filter((line) => {
+    const match = line.match(/^\s*odpowiedzialny\s*:\s*(.*)$/i);
+    if (!match) {
+      return true;
+    }
+
+    if (!responsiblePerson) {
+      responsiblePerson = (match[1] ?? '').trim();
+    }
+    return false;
+  });
+
+  return {
+    note: noteLines.join('\n').trim(),
+    responsiblePerson,
+  };
+}
+
+function normalizeResponsibleFields(task: AuditTask): AuditTask {
+  const parsed = splitResponsibleFromNote(task.note ?? '');
+  const existingResponsible = task.responsiblePerson.trim();
+
+  return {
+    ...task,
+    note: parsed.note,
+    responsiblePerson: existingResponsible.length > 0 ? existingResponsible : parsed.responsiblePerson,
+  };
+}
+
+function normalizeTaskListResponsibleFields(tasks: AuditTask[]): AuditTask[] {
+  return tasks.map(normalizeResponsibleFields);
+}
+
 function normalizeAuditTasksFromDetails(payload: unknown): AuditTask[] {
   const item = isRecord(payload) ? payload : {};
   const template = isRecord(item.template) ? item.template : null;
@@ -303,6 +340,7 @@ function normalizeAuditTasksFromDetails(payload: unknown): AuditTask[] {
 
       const result = resultsByChecklistItem.get(checklistItem.id);
       const description = asString(checklistItem.description, 'Punkt kontroli');
+      const parsed = splitResponsibleFromNote(result?.note ?? '');
 
       tasks.push({
         id: checklistItem.id,
@@ -310,8 +348,8 @@ function normalizeAuditTasksFromDetails(payload: unknown): AuditTask[] {
         title: description,
         description,
         status: result?.status ?? null,
-        note: result?.note ?? '',
-        responsiblePerson: '',
+        note: parsed.note,
+        responsiblePerson: parsed.responsiblePerson,
         photoUris: result?.photoUrl ? [result.photoUrl] : [],
       });
     }
@@ -423,9 +461,11 @@ async function toBackendResults(tasks: AuditTask[]): Promise<BackendAuditResultP
       continue;
     }
 
-    const noteParts = [task.note.trim()];
-    if (task.responsiblePerson.trim().length > 0) {
-      noteParts.push(`Odpowiedzialny: ${task.responsiblePerson.trim()}`);
+    const parsed = splitResponsibleFromNote(task.note);
+    const noteParts = [parsed.note];
+    const responsiblePerson = task.responsiblePerson.trim() || parsed.responsiblePerson;
+    if (responsiblePerson.length > 0) {
+      noteParts.push(`Odpowiedzialny: ${responsiblePerson}`);
     }
 
     let photoUrl: string | undefined;
@@ -543,13 +583,13 @@ export async function getAuditTasks(
   let offlineTasks: AuditTask[] | null = null;
 
   try {
-    offlineTasks = await getOfflineAuditTasks(auditId);
+    offlineTasks = normalizeTaskListResponsibleFields(await getOfflineAuditTasks(auditId));
   } catch {
     offlineTasks = null;
   }
 
   try {
-    const remote = await get<AuditTask[]>(`/audits/${auditId}/checklist`);
+    const remote = normalizeTaskListResponsibleFields(await get<AuditTask[]>(`/audits/${auditId}/checklist`));
 
     if (preferLocalProgress && offlineTasks && hasLocalProgress(offlineTasks)) {
       const merged = mergeTasksWithLocalProgress(remote, offlineTasks);
@@ -567,7 +607,7 @@ export async function getAuditTasks(
     try {
       // Fallback for current backend: build tasks from audit details payload.
       const detailsPayload = await get<unknown>(`/audits/${auditId}`);
-      const derivedTasks = normalizeAuditTasksFromDetails(detailsPayload);
+      const derivedTasks = normalizeTaskListResponsibleFields(normalizeAuditTasksFromDetails(detailsPayload));
 
       if (preferLocalProgress && offlineTasks && hasLocalProgress(offlineTasks)) {
         const merged = mergeTasksWithLocalProgress(derivedTasks, offlineTasks);
@@ -587,7 +627,7 @@ export async function getAuditTasks(
       return offlineTasks;
     }
 
-    return getOfflineAuditTasks(auditId);
+    return normalizeTaskListResponsibleFields(await getOfflineAuditTasks(auditId));
   }
 }
 
